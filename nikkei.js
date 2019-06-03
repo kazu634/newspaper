@@ -21,14 +21,18 @@ if (process.argv.length != 3) {
 const URL = process.argv[2];
 
 (async () => {
+  // puppeteerの起動
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
 
+  // コマンドライン引数で指定したURLにアクセスする
   await page.goto(URL, {waitUntil: "domcontentloaded"});
 
+  // ログインボタンをクリックする
   await page.click('a[id="JSID_LOGIN"]')
   await page.waitForNavigation({timeout: 6000, waitUntil: "domcontentloaded"});
 
+  // ログインページでID・パスワードを入力
   await page.type("[id='LA7010Form01:LA7010Email']", ID, {delay: 100})
   await page.type("[id='LA7010Form01:LA7010Password']", PASSWORD, {delay: 100})
 
@@ -36,12 +40,14 @@ const URL = process.argv[2];
   //   return document.querySelector('body').innerHTML;
   // });
   // console.log(body);
+  // ログインボタンをクリックする
   await page.evaluate(() => {
     document.querySelector('.btnM1').click();
   });
   // await page.click('.btnM1')
   await page.waitForNavigation({timeout: 6000, waitUntil: "domcontentloaded"});
 
+  // 記事ページのスクリーンショットを取得
   await page.screenshot({
     path: '001.png',
     fullPage: true
@@ -50,8 +56,8 @@ const URL = process.argv[2];
   // await page.evaluate(() => {
   //   document.querySelector('#JSID_UserMenu > a').click();
   // });
+  // ログオフメニューを表示する
   await page.click('#JSID_UserMenu > a')
-
   await page.waitForSelector('#JSID_l-miH02_H02c_userMenu', {visible: true});
 
   await page.screenshot({
@@ -59,6 +65,7 @@ const URL = process.argv[2];
     fullPage: true
   });
 
+  // ログオフを選択する
   await page.evaluate(() => {
     document.querySelector('#JSID_l-miH02_H02c_userMenu > div > div > div > div > div > a').click();
   });
@@ -69,5 +76,6 @@ const URL = process.argv[2];
     fullPage: true
   });
 
+  // puppeteerを閉じる
   await browser.close();
 })();
