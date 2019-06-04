@@ -1,4 +1,5 @@
 const puppeteer = require('puppeteer');
+const fs = require('fs');
 
 // 環境変数チェック
 if (!process.env.NIKKEIID) {
@@ -20,16 +21,25 @@ if (process.argv.length != 3) {
 }
 const URL = process.argv[2];
 
+// ファイル名の生成
+const regexp = /([A-Z0-9]+)/g;
+let match;
+match = regexp.exec(URL);
+
+const ARTICLEID = match[0];
+
+
 (async () => {
   // puppeteerの起動
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
 
   // コマンドライン引数で指定したURLにアクセスする
-  await page.goto(URL, {waitUntil: "domcontentloaded"});
+  await page.goto(URL);
+  await page.waitForSelector('#JSID_LOGIN', {visible: true});
 
   // ログインボタンをクリックする
-  await page.click('a[id="JSID_LOGIN"]')
+  await page.click('a[id="JSID_LOGIN"]', {waitUntil: "domcontentloaded"})
   await page.waitForNavigation({timeout: 6000, waitUntil: "domcontentloaded"});
 
   // ログインページでID・パスワードを入力
@@ -49,32 +59,35 @@ const URL = process.argv[2];
 
   // 記事ページのスクリーンショットを取得
   await page.screenshot({
-    path: '001.png',
+    path: ARTICLEID + '.png',
     fullPage: true
   });
 
-  // await page.evaluate(() => {
-  //   document.querySelector('#JSID_UserMenu > a').click();
-  // });
+  // タイトルの取得
+  var title = await page.$eval('h1.cmn-article_title > span', item => {
+    return item.innerText;
+  });
+
+  // 本文の取得
+  var body = await page.$eval('div.cmn-article_text', item => {
+    return item.innerText;
+  });
+
+  // ファイルの書き込み
+  var data = URL + "\n" + title + "\n\n" + body;
+  await fs.writeFile(ARTICLEID + '.txt', data, (err, data) => {
+    if(err) console.log(err);
+  });
+
   // ログオフメニューを表示する
   await page.click('#JSID_UserMenu > a')
   await page.waitForSelector('#JSID_l-miH02_H02c_userMenu', {visible: true});
-
-  await page.screenshot({
-    path: '002.png',
-    fullPage: true
-  });
 
   // ログオフを選択する
   await page.evaluate(() => {
     document.querySelector('#JSID_l-miH02_H02c_userMenu > div > div > div > div > div > a').click();
   });
   await page.waitForNavigation({timeout: 6000, waitUntil: "domcontentloaded"});
-
-  await page.screenshot({
-    path: '003.png',
-    fullPage: true
-  });
 
   // puppeteerを閉じる
   await browser.close();
