@@ -31,64 +31,84 @@ const ARTICLEID = match[0];
 
 (async () => {
   // puppeteerの起動
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-
-  // コマンドライン引数で指定したURLにアクセスする
-  await page.goto(URL);
-  await page.waitForSelector('#JSID_LOGIN', {visible: true});
-
-  // ログインボタンをクリックする
-  await page.click('a[id="JSID_LOGIN"]', {waitUntil: "domcontentloaded"})
-  await page.waitForNavigation({timeout: 6000, waitUntil: "domcontentloaded"});
-
-  // ログインページでID・パスワードを入力
-  await page.type("[id='LA7010Form01:LA7010Email']", ID, {delay: 100})
-  await page.type("[id='LA7010Form01:LA7010Password']", PASSWORD, {delay: 100})
-
-  // const body = await page.evaluate(() => {
-  //   return document.querySelector('body').innerHTML;
-  // });
-  // console.log(body);
-  // ログインボタンをクリックする
-  await page.evaluate(() => {
-    document.querySelector('.btnM1').click();
-  });
-  // await page.click('.btnM1')
-  await page.waitForNavigation({timeout: 6000, waitUntil: "domcontentloaded"});
-
-  // 記事ページのスクリーンショットを取得
-  await page.screenshot({
-    path: ARTICLEID + '.png',
-    fullPage: true
+  console.log("Puppeteerを起動しています");
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--headless', '--disable-gpu', '--disable-dev-shm-usage']
   });
 
-  // タイトルの取得
-  var title = await page.$eval('h1.cmn-article_title > span', item => {
-    return item.innerText;
-  });
+  try{
+    const page = await browser.newPage();
 
-  // 本文の取得
-  var body = await page.$eval('div.cmn-article_text', item => {
-    return item.innerText;
-  });
+    // コマンドライン引数で指定したURLにアクセスする
+    console.log("URLにアクセスします");
+    await page.goto(URL, {waitUntil: "domcontentloaded"});
+    await page.waitForSelector('#JSID_LOGIN', {visible: true});
 
-  // ファイルの書き込み
-  var data = URL + "\n" + title + "\n\n" + body;
-  await fs.writeFile(ARTICLEID + '.txt', data, (err, data) => {
-    if(err) console.log(err);
-  });
+    // ログインボタンをクリックする
+    console.log("ログインページに遷移します");
+    await page.click('a[id="JSID_LOGIN"]')
+    await page.waitForNavigation({timeout: 10000, waitUntil: "domcontentloaded"});
 
-  // ログオフメニューを表示する
-  await page.click('#JSID_UserMenu > a')
-  await page.waitForSelector('#JSID_l-miH02_H02c_userMenu', {visible: true});
+    // ログインページでID・パスワードを入力
+    console.log("ID・パスワードを入力します");
+    await page.type("[id='LA7010Form01:LA7010Email']", ID, {delay: 100})
+    await page.type("[id='LA7010Form01:LA7010Password']", PASSWORD, {delay: 100})
 
-  // ログオフを選択する
-  await page.evaluate(() => {
-    document.querySelector('#JSID_l-miH02_H02c_userMenu > div > div > div > div > div > a').click();
-  });
-  await page.waitForNavigation({timeout: 6000, waitUntil: "domcontentloaded"});
+    // const body = await page.evaluate(() => {
+    //   return document.querySelector('body').innerHTML;
+    // });
+    // console.log(body);
+    // ログインボタンをクリックする
+    await page.evaluate(() => {
+      console.log("ログインボタンをクリックします");
+      document.querySelector('.btnM1').click();
+    });
+    // await page.click('.btnM1')
+    await page.waitForNavigation({timeout: 6000, waitUntil: "domcontentloaded"});
 
-  // puppeteerを閉じる
-  await browser.close();
+    // 記事ページのスクリーンショットを取得
+    console.log("スクリーンショットを取得します");
+    await page.screenshot({
+      path: ARTICLEID + '.png',
+      fullPage: true
+    });
+
+    // タイトルの取得
+    console.log("タイトルを取得します");
+    var title = await page.$eval('h1.cmn-article_title > span', item => {
+      return item.innerText;
+    });
+
+    // 本文の取得
+    console.log("本文を取得します");
+    var body = await page.$eval('div.cmn-article_text', item => {
+      return item.innerText;
+    });
+
+    // ファイルの書き込み
+    console.log("ファイルに書き込みます");
+    var data = URL + "\n" + title + "\n\n" + body;
+    await fs.writeFile(ARTICLEID + '.txt', data, (err, data) => {
+      if(err) console.log(err);
+    });
+
+    // ログオフメニューを表示する
+    console.log("ログオフメニューを表示します");
+    await page.click('#JSID_UserMenu > a')
+    await page.waitForSelector('#JSID_l-miH02_H02c_userMenu', {visible: true});
+
+    // ログオフを選択する
+    console.log("ログオフを選択します");
+    await page.evaluate(() => {
+      document.querySelector('#JSID_l-miH02_H02c_userMenu > div > div > div > div > div > a').click();
+    });
+    await page.waitForNavigation({timeout: 6000, waitUntil: "domcontentloaded"});
+  } catch(e) {
+    throw e;
+  } finally {
+    // puppeteerを閉じる
+    console.log("Puppeteerを閉じます");
+    await browser.close();
+  }
 })();
